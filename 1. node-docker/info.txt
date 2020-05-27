@@ -1,0 +1,31 @@
+FROM  node:12.16.3-alpine3.11 >
+  Used to specify the docker image name where
+  node = docker image
+  12.16.3-alpine3.11 = version of node available on dockerhub
+
+
+# By specifying the dir path we are specifing that any further command will be  executed relative to  this path inside container
+WORKDIR /usr/app
+
+
+# Install some dependencies
+RUN npm install
+
+# Copy curr folder to the container
+COPY ./ ./
+
+
+# Default command after start
+CMD ["npm", "start"]
+
+
+
+** Building the app in the speciifed WORK DIRECTORY (/usr/app)
+    docker build -t vikashkumargaurav/node-test:latest .
+
+** Running the app
+    docker run -p 1500:8080 vikashkumargaurav/node-test:latest
+
+** Accessing the app simultaneously
+    docker exec -it [ID] sh
+    [ Run doker ps to get the container id ]

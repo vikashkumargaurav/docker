@@ -1,0 +1,10 @@
+ version: '3'
+ services:
+   redis-server:
+     image: 'redis'
+   node-app:
+     restart: always  # allows restart on crash  options : no || yes || on-failure || unless-stopped
+     build: .
+     ports:
+       - "8081:4001"
+

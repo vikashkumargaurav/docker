@@ -1,0 +1,223 @@
+* docker version :
+    Shows basic info
+
+* docker info :
+    Shows detailed info like no. of containers
+
+
+***           BASIC DOCKER CONTAINER OPERATIONS  ***
+
+* docker container run -it -p 8081:80 nginx :
+    Creating if not available and running the container in the foreground (ctrl+c  to close). 
+    Here "-it" is shorthand for "-i" and  "-t" [i= take input] [t = show formatted input and output] 
+    Here "-p" belongs to port no which will map your system and container port. i.e. 8081 is your computer port while 80 is container port
+    "nginx" is the container name available in dockerhub 
+
+* docker container run -d -p 80:80 nginx :
+    Create if not available and run a container in background
+
+* docker container run -d -p 80:80 --name nginx-server nginx : 
+    Providesa cutom name to the Container    
+
+*** NOTE: "docker container" command can be replaced with just "docker" command to run above operations
+
+* docker container ls OR docker ps : 
+    Shows running containers
+
+* docker container ls -a OR docker ps -a :
+    List all containers (Even if not running)
+
+* docker container stop [ID] :
+    Stop container
+
+* docker stop $(docker ps -aq) : 
+    Stop all running containers    
+
+* docker container rm [ID] : 
+    Removes a container (Can not remove running containers, must stop first)    
+
+* docker container rm -f [ID] : 
+    To remove a running container use force(-f)
+
+* docker container rm [ID] [ID] [ID] : 
+    Remove multiple containers
+
+* docker container prune OR docker rm $(docker ps -aq) : 
+    Remove all containers
+
+***           DOCKER RUN COMMANDS VARIATIONS  ***
+
+* docker run container-name : 
+    Runs a docker otherwise download 
+
+*** NOTE: By default contianer contains a default command after container is started.
+          We can override the default command with our own command by added custom command at the end 
+          Ex : > docker run busybox echo This is custom command
+                  Output : This is custom command
+                > docker run busybox ls
+                  output : file list
+
+* docker container prune :
+    Removes all the container and local cache
+
+* docker logs [ID] :
+    Gets the logs of container if running (Mostly if container is running in background).
+    if you forget to start with -a flag (Runs container after Shows logs) later you can get the logs by running this command  
+
+* docker stop [ID] : 
+    Stops a running container. If not automatically stops in 10sec the docker will run the kill command        
+
+* docker kill [ID] : 
+    Kills a running container
+
+*** docker -exec -it [ID] yourcommand : 
+    Useful when you want to run command on a running container
+    Ex: Getting terminal access of the runing container
+    Here "-exec" = Run another command 
+         "-it" = Allows us to provide input to container    
+
+* docker -exec -i [ID] sh :
+    Opens up the terminal of running container if container image supports
+    Here "sh" is command to trigger terminal in unix environment 
+
+* docker run -it containername sh :
+    Opens up the terminal directly once the container starts     
+
+
+
+***     CREATING A DOCKER FILE  ***
+
+1. Create a file "Docker" in the project dir :
+2. Docker file follows following structure :
+
+FROM  docker-image-name >
+  Used to speecify the docker image name 
+
+ENV key=value > 
+  Setup environmant variables
+
+RUN your-commands  >
+    You can specify commandas which will Downloads and install as dependency etc
+
+CMD["command"] > 
+    Tells the image what to do when it  starts  as container
+
+
+***     BUILDING A DOCKER  PROJECT ***
+
+* COPY ./ ./ >
+    
+    Before running a project make sure that files are copied to the container bcz initially container 
+    is not be aware of your current project
+    ./ denotes current directory 
+    the first path the directory to copy from your machine
+
+* WORKDIR /usr/app :
+    By default files would be copied on root directory of container.
+    By specifying the dir path we are specifing that any further command will be  executed relative to 
+    this path inside container
+
+
+* docker build . :
+    builds a docker image container from "Docker file
+
+* docker build -t ID/Projectname:version . :
+    Tags an image for given docker image (Industry standard) 
+    ex: In project dir. to run a custom node docker project type :
+        docker build -t vikashkumargaurav/node-test:1.0.0 .
+
+* docker build -p 8081:8080 [imgid] :
+    Maps port of docker container to the system at runtime
+    8081 is the incoming request to this port       
+    8080 is the port inside container
+
+
+***   DOCKER COMPOSE  ***
+
+. It Configure relationships between containers
+. To use docker-compose create a docker-compose.yml file 
+
+Example of yml file :
+ version: '3'
+ services:
+   redis-server:
+     image: 'redis'
+   node-app:
+     build: .
+     ports:
+       - "8081:4001"
+
+
+* version : Specify the version of composer file
+* services: >
+    servicename:
+        image: 'imagename'
+
+    Used to bind multiple docker image containers
+
+
+* docker-compose up :
+  run the app using docker-compose
+
+* docker-compose up -d :
+  run the app using docker-compose in background
+
+* docker-compose down :
+  stops all the binded containers connected to app using docker-compose
+  
+
+***  MAP VOLUMES TO USE HOT RELOADING   ***
+    Mapping  volumnes with the our local dir to container directory will allow to use files from local directory.
+    This will allow hot reloading of application without manually building the changes everytime.
+
+    * APPORACH 1*
+    Using native docker command :
+
+        docker run -p 8080:8080 -v /app/nodemodules -v $(pwd):/app  <image_id>
+
+        Explanantion: 
+            1. Here $(pwd) refers path to local directory
+            2. /app refers to containers app directory where app resides
+                It means container will server file from our local directory instead of container directory.
+            3.  "-v /app/nodemodules" Ommits nodemodules folder from local directory hence uses container directory
+                (local path is not provided)   
+
+    The problem with this approach is a long command name.
+    We will try to format it using docker-composer.
+
+    * APPORACH 1*
+    Using  docker-composer command :
+
+        Follow the following structure in docor composer to achieve above results.
+        After run docker up to use the above changes.
+       
+        # docker-composer.yml contents
+       
+        version: '3'
+        services:
+        web:
+
+            #
+            Use this if you are specifing custom Dockerfile. Here file is Dockerfile.dev
+            build:
+                context: .
+                dockerfile: Dockerfile.dev
+            #
+
+            build : .
+            ports:
+            - "3000:3000"
+            volumes:
+            - /app/node_modules  # Ommits node modules of local folder
+            - .:/app    # Maps local dir to container directory         
+
+       
+        # Dockerfile contents
+
+            FROM node:alpine
+            WORKDIR '/app'
+            COPY package*.json ./
+            RUN npm install
+            # Copying files is optional since we are mapping with the local files, but it is better to have it.
+            COPY . .
+            RUN npm run build
